@@ -1,0 +1,34 @@
+/* Animation du menu déroulant */
+.dropdown-menu.dropdown-animate {
+    animation: fadeInDown 0.3s ease-out;
+    transform-origin: top right; /* Point de départ de l'animation */
+}
+
+/* Animation keyframes */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px); /* Glissement léger vers le bas */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Ajoute une bordure douce aux cartes */
+.card {
+    border-radius: 10px;
+}
+
+/* Boutons au survol */
+.btn-primary:hover {
+    background-color: #003d99; /* Bleu plus sombre */
+}
+
+/* Focus sur les champs */
+.form-control:focus {
+    border-color: #003d99;
+    box-shadow: 0 0 5px rgba(0, 61, 153, 0.5);
+}
+

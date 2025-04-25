@@ -1,0 +1,68 @@
+﻿#!/bin/bash
+
+# Vérification si un alias utilisateur est passé en argument
+if [ -z "$0" "$1" ]; then
+    echo "Usage: $1 <alias_utilisateur> $2 <mot_de_passe>"
+    exit 1
+fi
+
+# Variables
+ALIAS=$1
+PASSWORD=$2
+APACHE_CONF_DIR="/etc/apache2/sites-available"
+DNS_FILE="/etc/bind/db.heberge3.lan"
+HOME_DIR="/home/$ALIAS"
+DB_NAME="heberge3"
+
+
+
+
+echo "Début de la création de l'utilisateur : $ALIAS"
+
+# 1. Création du compte Linux
+echo "Création du compte Linux..."
+if sudo useradd -m -d "$HOME_DIR" -s /bin/bash "$ALIAS"; then
+    echo "$ALIAS:$PASSWORD" | sudo chpasswd
+    echo "Compte Linux créé avec succés. Mot de passe : $PASSWORD"
+else
+    echo "Echec de la création du compte Linux."
+    exit 1
+fi
+
+
+
+# 2. Ajout à la base de données principale
+echo "Ajout de l'utilisateur dans la base de données principale..."
+mysql -u root -proot -e "INSERT INTO USER (alias, created_at) VALUES ('$ALIAS', NOW());" "$DB_NAME"
+
+
+
+	# 3. Création de l'utilisateur GLPI
+	# echo "Ajout de l'utilisateur dans GLPI..."
+	# mysql -u root -proot -e "INSERT INTO glpi_users (name, password) VALUES ('$ALIAS', MD5('$PASSWORD'));" glpi
+	# USER_ID=$(mysql -u root -proot -e "SELECT id FROM glpi_users WHERE name='$ALIAS';" glpi -sN)
+	# mysql -u root -proot -e "INSERT INTO glpi_profiles_users (users_id, profiles_id) VALUES ('$USER_ID', 2);" glpi
+
+
+
+# 4. Configuration Apache
+echo "Configuration Apache..."
+APACHE_CONF="$APACHE_CONF_DIR/$ALIAS.conf"
+cp "/etc/apache2/sites-available/XXXX.conf" "$ALIAS.conf"
+sed -i -e "s/XXXX/$ALIAS.conf/g" "$ALIAS.conf"
+
+sudo a2ensite "$ALIAS.conf"
+sudo service apache2 reload
+
+
+
+# 5. Ajout de l'entrée DNS
+echo "Ajout de l'entrée DNS..."
+if ! grep -q "$ALIAS IN CNAME" "$DNS_FILE"; then
+    echo "$ALIAS IN CNAME server.heberge3.lan." | sudo tee -a "$DNS_FILE"
+    sudo service bind9 reload
+else
+    echo "Entrée DNS déjà existante."
+fi
+
+echo "Utilisateur $ALIAS créé avec succés !"
